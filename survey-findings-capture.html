@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Observations">
+<title>Observation Capture</title>
+<style>
+  :root{
+    --navy:#00328A;--navy-deep:#001634;--navy-panel:#062a63;
+    --teal:#00A0A0;--teal-bright:#12c2c2;
+    --paper:#eef2f9;--card:#ffffff;--ink:#0a1628;--muted:#5c6b82;
+    --line:#d5deec;--line-soft:#e6ecf6;
+    --a:#e5484d;--b:#e07b1a;--c:#3f6fb0;
+    --safety:#e5484d;--defect:#e07b1a;--maint:#2f8f6b;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono","Menlo","Cascadia Code",monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.45;padding-bottom:120px;-webkit-text-size-adjust:100%;}
+
+  .panel{background:linear-gradient(175deg,var(--navy-deep),var(--navy-panel));color:#fff;padding:calc(env(safe-area-inset-top) + 14px) 18px 16px;position:sticky;top:0;z-index:50;box-shadow:0 2px 14px rgba(0,10,40,.28);}
+  .panel-top{display:flex;align-items:center;gap:12px;}
+  .gauge{font-family:var(--mono);display:flex;align-items:baseline;gap:7px;padding:7px 11px;border:1px solid rgba(18,194,194,.5);border-radius:8px;background:rgba(0,160,160,.10);white-space:nowrap;}
+  .gauge .dot{width:9px;height:9px;border-radius:50%;background:var(--teal-bright);box-shadow:0 0 10px var(--teal-bright);display:inline-block;align-self:center;}
+  .gauge .num{font-size:24px;font-weight:700;letter-spacing:1px;color:#fff;line-height:1;}
+  .gauge .lbl{font-size:8.5px;letter-spacing:1.5px;color:var(--teal-bright);text-transform:uppercase;}
+  .vessel-wrap{flex:1;min-width:0;}
+  .vessel-wrap label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--teal-bright);margin:0 0 3px 2px;}
+  .vessel-wrap input{width:100%;background:transparent;border:none;border-bottom:1.5px solid rgba(255,255,255,.25);color:#fff;font-size:19px;font-weight:600;font-family:var(--sans);padding:2px 2px 5px;}
+  .vessel-wrap input::placeholder{color:rgba(255,255,255,.4);font-weight:500;}
+  .vessel-wrap input:focus{outline:none;border-bottom-color:var(--teal-bright);}
+
+  .wrap{max-width:640px;margin:0 auto;padding:16px 14px 0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 15px 18px;box-shadow:0 1px 3px rgba(10,22,40,.05);}
+  .flabel{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:0 0 8px 1px;display:block;}
+  .field + .field{margin-top:16px;}
+
+  .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .cchip{appearance:none;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-family:var(--sans);cursor:pointer;border-radius:10px;padding:10px 6px;text-align:center;transition:border-color .12s,background .12s,box-shadow .12s;}
+  .cchip .lg{font-size:20px;font-weight:800;line-height:1.1;display:block;}
+  .cchip .sm{font-size:10.5px;color:var(--muted);display:block;margin-top:2px;line-height:1.2;}
+  .cchip[data-k="A"] .lg{color:var(--a);} .cchip[data-k="B"] .lg{color:var(--b);} .cchip[data-k="C"] .lg{color:var(--c);}
+  .cchip[aria-pressed="true"][data-k="A"]{border-color:var(--a);background:#fdecec;box-shadow:inset 0 0 0 1.5px var(--a);}
+  .cchip[aria-pressed="true"][data-k="B"]{border-color:var(--b);background:#fdf1e6;box-shadow:inset 0 0 0 1.5px var(--b);}
+  .cchip[aria-pressed="true"][data-k="C"]{border-color:var(--c);background:#eaf0f9;box-shadow:inset 0 0 0 1.5px var(--c);}
+
+  .catchip{appearance:none;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-family:var(--sans);font-size:14.5px;font-weight:600;cursor:pointer;border-radius:10px;padding:12px 6px;transition:border-color .12s,background .12s,box-shadow .12s;}
+  .catchip[aria-pressed="true"][data-n="Safety"]{border-color:var(--safety);background:#fdecec;box-shadow:inset 0 0 0 1.5px var(--safety);color:var(--safety);}
+  .catchip[aria-pressed="true"][data-n="Defect"]{border-color:var(--defect);background:#fdf1e6;box-shadow:inset 0 0 0 1.5px var(--defect);color:#a9560f;}
+  .catchip[aria-pressed="true"][data-n="Maintenance"]{border-color:var(--maint);background:#e8f5ef;box-shadow:inset 0 0 0 1.5px var(--maint);color:var(--maint);}
+
+  select,textarea,input.txt{width:100%;font-family:var(--sans);font-size:16px;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;background:#fff;padding:13px 12px;}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235c6b82' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:38px;}
+  select:focus,textarea:focus,input.txt:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,160,160,.15);}
+  select:disabled{background-color:#f4f6fb;color:var(--muted);}
+  input.txt::placeholder,textarea::placeholder{color:#9aa8bd;}
+  textarea{min-height:92px;resize:vertical;line-height:1.5;}
+  .note-hint{font-size:12px;color:var(--muted);margin:6px 2px 0;}
+
+  .add{margin-top:18px;width:100%;border:none;border-radius:11px;cursor:pointer;background:var(--navy);color:#fff;font-family:var(--sans);font-size:16px;font-weight:700;letter-spacing:.3px;padding:16px;display:flex;align-items:center;justify-content:center;gap:9px;transition:background .12s,transform .06s;}
+  .add:active{transform:scale(.985);background:#00276e;}
+  .add svg{width:19px;height:19px;}
+  .warn{color:var(--a);font-size:13px;font-weight:600;text-align:center;margin:10px 0 -4px;min-height:18px;}
+
+  .list-head{display:flex;align-items:center;justify-content:space-between;margin:26px 2px 12px;}
+  .list-head h2{font-family:var(--mono);font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin:0;font-weight:600;}
+  .empty{text-align:center;color:var(--muted);font-size:14px;border:1.5px dashed var(--line);border-radius:12px;padding:30px 20px;background:#fff;}
+  .empty strong{display:block;color:var(--ink);font-size:15px;margin-bottom:4px;}
+
+  .obs{background:#fff;border:1px solid var(--line);border-left:5px solid var(--muted);border-radius:10px;padding:12px 13px;margin-bottom:9px;display:flex;gap:11px;align-items:flex-start;}
+  .obs[data-k="A"]{border-left-color:var(--a);} .obs[data-k="B"]{border-left-color:var(--b);} .obs[data-k="C"]{border-left-color:var(--c);}
+  .obs .body{flex:1;min-width:0;}
+  .obs .meta{font-family:var(--mono);font-size:11px;letter-spacing:.5px;color:var(--muted);margin-bottom:3px;}
+  .obs .meta .k{font-weight:700;}
+  .obs[data-k="A"] .meta .k{color:var(--a);} .obs[data-k="B"] .meta .k{color:var(--b);} .obs[data-k="C"] .meta .k{color:var(--c);}
+  .cat{font-weight:700;}
+  .cat.Safety{color:var(--safety);} .cat.Defect{color:#a9560f;} .cat.Maintenance{color:var(--maint);}
+  .obs .txt{font-size:15px;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
+  .obs .del{flex:none;border:none;background:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;padding:2px 4px;border-radius:6px;}
+  .obs .del:active{background:#fde8e8;color:var(--a);}
+
+  .bar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 12px calc(env(safe-area-inset-bottom) + 12px);display:flex;gap:8px;max-width:640px;margin:0 auto;}
+  .bar button{flex:1;border-radius:10px;font-family:var(--sans);font-size:14.5px;font-weight:700;padding:14px 8px;cursor:pointer;transition:background .12s,color .12s;}
+  .btn-debrief{border:none;background:var(--navy);color:#fff;}
+  .btn-debrief:disabled{background:#c3ccd8;}
+  .btn-export{border:none;background:var(--teal);color:#fff;}
+  .btn-export:disabled{background:#c3ccd8;}
+  .btn-new{border:1.5px solid var(--line);background:#fff;color:var(--muted);}
+  .btn-new.armed{border-color:var(--a);color:var(--a);background:#fdecec;}
+
+  .sheet-bg{position:fixed;inset:0;z-index:100;background:rgba(3,12,32,.55);display:none;align-items:flex-end;justify-content:center;}
+  .sheet-bg.open{display:flex;}
+  .sheet{background:var(--paper);width:100%;max-width:640px;max-height:90vh;border-radius:18px 18px 0 0;display:flex;flex-direction:column;padding:8px 16px calc(env(safe-area-inset-bottom) + 16px);}
+  .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 12px;flex:none;}
+  .sheet h3{margin:0 0 2px;font-size:18px;}
+  .sheet .sub{color:var(--muted);font-size:13px;margin:0 0 14px;}
+  .seg{display:flex;gap:6px;background:#e2e9f4;padding:4px;border-radius:10px;margin-bottom:12px;}
+  .seg button{flex:1;border:none;background:none;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);padding:9px;border-radius:7px;cursor:pointer;}
+  .seg button.on{background:#fff;color:var(--navy);box-shadow:0 1px 2px rgba(10,22,40,.12);}
+  .out{flex:1;min-height:180px;font-family:var(--mono);font-size:12.5px;line-height:1.5;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--ink);width:100%;resize:none;}
+  .sheet-actions{display:flex;gap:10px;margin-top:12px;}
+  .sheet-actions button{flex:1;border-radius:10px;font-family:var(--sans);font-size:15px;font-weight:700;padding:14px;cursor:pointer;}
+  .btn-copy{border:none;background:var(--navy);color:#fff;}
+  .btn-copy.done{background:var(--teal);}
+  .btn-close{border:1.5px solid var(--line);background:#fff;color:var(--muted);}
+
+  .debrief{position:fixed;inset:0;z-index:110;background:var(--paper);display:none;flex-direction:column;}
+  .debrief.open{display:flex;}
+  .db-head{background:var(--navy-deep);color:#fff;padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;}
+  .db-head .v{font-size:20px;font-weight:700;margin-bottom:8px;}
+  .db-tally{display:flex;gap:8px;flex-wrap:wrap;}
+  .db-pill{font-family:var(--mono);font-size:12px;font-weight:700;padding:5px 10px;border-radius:20px;color:#fff;}
+  .db-pill.a{background:var(--a);} .db-pill.b{background:var(--b);} .db-pill.c{background:var(--c);} .db-pill.t{background:rgba(255,255,255,.18);}
+  .db-seg{display:flex;gap:6px;background:rgba(255,255,255,.12);padding:4px;border-radius:9px;margin-top:12px;}
+  .db-seg button{flex:1;border:none;background:none;color:rgba(255,255,255,.7);font-family:var(--sans);font-size:13px;font-weight:600;padding:8px;border-radius:6px;cursor:pointer;}
+  .db-seg button.on{background:#fff;color:var(--navy);}
+  .db-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 90px;}
+  .db-group{margin-bottom:22px;}
+  .db-gh{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding-bottom:7px;border-bottom:2px solid var(--line);}
+  .db-gh .bar-k{width:14px;height:14px;border-radius:4px;}
+  .db-gh .bar-k.a{background:var(--a);} .db-gh .bar-k.b{background:var(--b);} .db-gh .bar-k.c{background:var(--c);}
+  .db-gh h4{margin:0;font-size:15px;font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--ink);}
+  .db-gh .gc{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--muted);}
+  .db-item{padding:12px 0;border-bottom:1px solid var(--line-soft);}
+  .db-item:last-child{border-bottom:none;}
+  .db-item .top{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;}
+  .db-k{font-family:var(--mono);font-weight:800;font-size:13px;width:22px;height:22px;border-radius:5px;color:#fff;display:flex;align-items:center;justify-content:center;flex:none;}
+  .db-k.a{background:var(--a);} .db-k.b{background:var(--b);} .db-k.c{background:var(--c);}
+  .db-cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:12px;background:#e2e9f4;color:var(--navy);}
+  .db-cat.Safety{background:#fdecec;color:var(--safety);} .db-cat.Defect{background:#fdf1e6;color:#a9560f;} .db-cat.Maintenance{background:#e8f5ef;color:var(--maint);}
+  .db-loc{font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .db-note{font-size:18px;line-height:1.5;color:var(--ink);}
+  .db-done{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);background:rgba(238,242,249,.92);backdrop-filter:blur(8px);border-top:1px solid var(--line);}
+  .db-done button{width:100%;max-width:610px;margin:0 auto;display:block;border:none;background:var(--navy);color:#fff;font-family:var(--sans);font-size:16px;font-weight:700;padding:15px;border-radius:11px;cursor:pointer;}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="panel">
+  <div class="panel-top">
+    <div class="vessel-wrap"><label for="vessel">Vessel</label><input id="vessel" type="text" placeholder="Vessel name" autocomplete="off" spellcheck="false"></div>
+    <div class="gauge"><span class="dot"></span><span class="num" id="count">0</span><span class="lbl">Observations</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <div class="field">
+      <span class="flabel">Severity</span>
+      <div class="three" id="sevChips">
+        <button class="cchip" data-k="A" aria-pressed="false"><span class="lg">A</span><span class="sm" id="lblA"></span></button>
+        <button class="cchip" data-k="B" aria-pressed="false"><span class="lg">B</span><span class="sm" id="lblB"></span></button>
+        <button class="cchip" data-k="C" aria-pressed="false"><span class="lg">C</span><span class="sm" id="lblC"></span></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="flabel">Category</span>
+      <div class="three" id="catChips">
+        <button class="catchip" data-n="Safety" aria-pressed="false">Safety</button>
+        <button class="catchip" data-n="Defect" aria-pressed="false">Defect</button>
+        <button class="catchip" data-n="Maintenance" aria-pressed="false">Maintenance</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="flabel" for="system">System</label>
+      <select id="system"><option value="">Select system…</option></select>
+    </div>
+
+    <div class="field">
+      <label class="flabel" for="subsystem">Subsystem</label>
+      <select id="subsystem" disabled><option value="">Select system first</option></select>
+    </div>
+
+    <div class="field">
+      <label class="flabel" for="component">Component <span style="text-transform:none;letter-spacing:0;">(optional)</span></label>
+      <input class="txt" id="component" list="compList" placeholder="Specific item, e.g. House bank battery #2" autocomplete="off">
+      <datalist id="compList"></datalist>
+    </div>
+
+    <div class="field">
+      <label class="flabel" for="note">Observation</label>
+      <textarea id="note" placeholder="Tap the mic on your keyboard and describe what you see…" spellcheck="true"></textarea>
+      <p class="note-hint">Dictation works here — no typing needed.</p>
+    </div>
+
+    <button class="add" id="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add observation</button>
+    <div class="warn" id="warn"></div>
+  </div>
+
+  <div class="list-head"><h2>Captured</h2></div>
+  <div id="list"></div>
+</div>
+
+<div class="bar">
+  <button class="btn-new" id="new">New vessel</button>
+  <button class="btn-debrief" id="debrief" disabled>Debrief</button>
+  <button class="btn-export" id="export" disabled>Export</button>
+</div>
+
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Export observations</h3>
+    <p class="sub">CSV for InspectX re-entry, or the AI prompt to draft the formal findings.</p>
+    <div class="seg" id="seg"><button data-f="csv" class="on">CSV</button><button data-f="md">AI prompt</button></div>
+    <textarea class="out" id="out" readonly></textarea>
+    <div class="sheet-actions"><button class="btn-close" id="close">Close</button><button class="btn-copy" id="copy">Copy</button></div>
+  </div>
+</div>
+
+<div class="debrief" id="dbView">
+  <div class="db-head">
+    <div class="v" id="dbVessel">Vessel</div>
+    <div class="db-tally" id="dbTally"></div>
+    <div class="db-seg" id="dbSeg"><button data-g="sev" class="on">By severity</button><button data-g="system">By system</button></div>
+  </div>
+  <div class="db-body" id="dbBody"></div>
+  <div class="db-done"><button id="dbDone">Back to capture</button></div>
+</div>
+
+<script>
+// ---- Editable config ----
+const SEVERITY_LABELS = { A:"Address now", B:"Near-term", C:"Monitor / minor" }; // placeholder — set to your A/B/C definitions
+const SEV_ORDER = ["A","B","C"];
+const SYSTEMS = {
+  "Hull & Structure":["Hull below waterline","Topsides","Keel / Ballast","Deck / Coring","Bulkheads / Stringers","Blisters / Osmosis","Through-hulls"],
+  "Deck & Superstructure":["Deck hardware","Hatches / Ports","Rails / Stanchions","Windows / Glazing","Non-skid","Anchor locker"],
+  "Propulsion":["Engine","Transmission","Shaft / Coupling","Propeller","Engine mounts","Exhaust system","Engine controls"],
+  "Fuel System":["Tanks","Lines / Hoses","Filters / Separators","Fill / Vent","Shutoffs","Labeling"],
+  "Electrical – DC":["Batteries","Wiring / Connections","DC panel","Charging system","Bonding","Overcurrent protection"],
+  "Electrical – AC":["Shore power inlet","Inverter / Charger","AC panel","GFCI","Galvanic isolator","Wiring"],
+  "Steering":["Helm","Cables / Hydraulics","Rudder / Bearing","Autopilot","Emergency tiller"],
+  "Plumbing & Bilge":["Bilge pumps","Seacocks","Hoses / Clamps","Fresh water","Holding tank","Sanitation"],
+  "Ground Tackle":["Windlass","Anchor","Rode","Cleats / Chocks"],
+  "Safety Equipment":["PFDs","Fire extinguishers","Flares / Visual","Horn","Navigation lights","EPIRB"],
+  "Navigation":["Electronics","Compass","VHF","Radar / GPS","Charts"],
+  "Rigging (Sail)":["Standing rigging","Running rigging","Mast / Boom","Furling","Winches","Chainplates"],
+  "Accommodations":["HVAC","Refrigeration","Galley / Propane","Interior structure","Ventilation"]
+};
+
+const state={ sev:"", cat:"", findings:[] };
+const $=id=>document.getElementById(id);
+
+$("lblA").textContent=SEVERITY_LABELS.A; $("lblB").textContent=SEVERITY_LABELS.B; $("lblC").textContent=SEVERITY_LABELS.C;
+
+const sysSel=$("system"), subSel=$("subsystem");
+Object.keys(SYSTEMS).forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;sysSel.appendChild(o);});
+sysSel.addEventListener("change",()=>{
+  const s=sysSel.value; subSel.innerHTML="";
+  if(!s){subSel.disabled=true;subSel.innerHTML='<option value="">Select system first</option>';return;}
+  subSel.disabled=false;
+  const blank=document.createElement("option");blank.value="";blank.textContent="— (system-level) —";subSel.appendChild(blank);
+  SYSTEMS[s].forEach(sub=>{const o=document.createElement("option");o.value=sub;o.textContent=sub;subSel.appendChild(o);});
+});
+
+$("sevChips").addEventListener("click",e=>{const b=e.target.closest(".cchip");if(!b)return;state.sev=b.dataset.k;[...document.querySelectorAll(".cchip")].forEach(c=>c.setAttribute("aria-pressed",c===b?"true":"false"));$("warn").textContent="";});
+$("catChips").addEventListener("click",e=>{const b=e.target.closest(".catchip");if(!b)return;state.cat=b.dataset.n;[...document.querySelectorAll(".catchip")].forEach(c=>c.setAttribute("aria-pressed",c===b?"true":"false"));$("warn").textContent="";});
+
+$("add").addEventListener("click",()=>{
+  const note=$("note").value.trim();const comp=$("component").value.trim();const miss=[];
+  if(!state.sev)miss.push("a severity");if(!state.cat)miss.push("a category");if(!sysSel.value)miss.push("a system");if(!note)miss.push("the observation");
+  if(miss.length){$("warn").textContent="Add "+miss.join(", ")+".";return;}
+  state.findings.push({sev:state.sev,cat:state.cat,system:sysSel.value,subsystem:subSel.value||"",component:comp,note});
+  $("note").value="";$("component").value="";$("warn").textContent="";render();$("note").focus();
+});
+
+function locPath(f){return [f.system,f.subsystem,f.component].filter(Boolean).join(" › ");}
+
+function render(){
+  $("count").textContent=state.findings.length;
+  const has=state.findings.length>0;$("export").disabled=!has;$("debrief").disabled=!has;
+  const list=$("list");
+  if(!has){list.innerHTML='<div class="empty"><strong>No observations yet</strong>Set severity and category, choose the system, and dictate what you see.</div>';return;}
+  list.innerHTML="";
+  state.findings.forEach((f,i)=>{
+    const el=document.createElement("div");el.className="obs";el.dataset.k=f.sev;
+    el.innerHTML='<div class="body"><div class="meta"><span class="k">'+f.sev+'</span> · <span class="cat '+f.cat+'">'+f.cat.toUpperCase()+'</span> · '+esc(locPath(f))+'</div><div class="txt">'+esc(f.note)+'</div></div><button class="del" data-i="'+i+'" aria-label="Delete observation">×</button>';
+    list.appendChild(el);
+  });
+}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+$("list").addEventListener("click",e=>{const d=e.target.closest(".del");if(!d)return;state.findings.splice(+d.dataset.i,1);render();});
+
+let armed=false,armTimer=null;
+$("new").addEventListener("click",()=>{
+  const btn=$("new");
+  if(!armed){armed=true;btn.classList.add("armed");btn.textContent=state.findings.length?"Discard "+state.findings.length+"? Tap again":"Clear? Tap again";armTimer=setTimeout(disarm,3000);return;}
+  clearTimeout(armTimer);disarm();
+  state.findings=[];state.sev="";state.cat="";$("vessel").value="";$("note").value="";$("component").value="";sysSel.value="";sysSel.dispatchEvent(new Event("change"));
+  [...document.querySelectorAll(".cchip,.catchip")].forEach(c=>c.setAttribute("aria-pressed","false"));render();
+});
+function disarm(){armed=false;$("new").classList.remove("armed");$("new").textContent="New vessel";}
+
+// ---- Export ----
+let fmt="csv";
+function buildCSV(){
+  const v=$("vessel").value.trim();const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  let rows=["Vessel,Severity,Category,System,Subsystem,Component,Observation"];
+  state.findings.forEach(f=>rows.push([v,f.sev,f.cat,f.system,f.subsystem,f.component,f.note].map(q).join(",")));
+  return rows.join("\n");
+}
+function buildMD(){
+  const v=$("vessel").value.trim()||"(unnamed vessel)";const date=new Date().toISOString().slice(0,10);
+  let out="VESSEL: "+v+"\nDATE: "+date+"\nOBSERVATIONS: "+state.findings.length+"\n\nWrite formal survey findings from the observations below. Each is tagged by severity (A/B/C) and category (Safety / Defect / Maintenance).\n";
+  const g={};state.findings.forEach(f=>{(g[f.system]=g[f.system]||[]).push(f);});
+  Object.keys(g).forEach(sys=>{out+="\n## "+sys.toUpperCase()+"\n";g[sys].forEach(f=>{const tail=[f.subsystem,f.component].filter(Boolean).join(" — ");out+="- ["+f.sev+" · "+f.cat+"] "+(tail?tail+": ":"")+f.note+"\n";});});
+  return out;
+}
+function refreshOut(){$("out").value=fmt==="csv"?buildCSV():buildMD();}
+$("export").addEventListener("click",()=>{refreshOut();$("sheetBg").classList.add("open");});
+$("close").addEventListener("click",()=>$("sheetBg").classList.remove("open"));
+$("sheetBg").addEventListener("click",e=>{if(e.target===$("sheetBg"))$("sheetBg").classList.remove("open");});
+$("seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;fmt=b.dataset.f;[...$("seg").children].forEach(c=>c.classList.toggle("on",c===b));refreshOut();});
+$("copy").addEventListener("click",async()=>{const btn=$("copy");try{await navigator.clipboard.writeText($("out").value);}catch(_){$("out").focus();$("out").select();document.execCommand("copy");}btn.textContent="Copied";btn.classList.add("done");setTimeout(()=>{btn.textContent="Copy";btn.classList.remove("done");},1600);});
+
+// ---- Debrief ----
+let dbGroup="sev";
+function openDebrief(){
+  $("dbVessel").textContent=$("vessel").value.trim()||"Observation debrief";
+  const cnt={A:0,B:0,C:0};state.findings.forEach(f=>cnt[f.sev]++);
+  $("dbTally").innerHTML='<span class="db-pill t">'+state.findings.length+' total</span><span class="db-pill a">A · '+cnt.A+'</span><span class="db-pill b">B · '+cnt.B+'</span><span class="db-pill c">C · '+cnt.C+'</span>';
+  renderDebrief();$("dbView").classList.add("open");
+}
+function renderDebrief(){
+  const body=$("dbBody");body.innerHTML="";let groups;
+  if(dbGroup==="sev"){
+    groups=SEV_ORDER.map(k=>({key:k,label:"Severity "+k+" — "+SEVERITY_LABELS[k],sev:k,items:state.findings.filter(f=>f.sev===k)})).filter(g=>g.items.length);
+  } else {
+    const map={};state.findings.forEach(f=>{(map[f.system]=map[f.system]||[]).push(f);});
+    groups=Object.keys(map).map(s=>({key:s,label:s,sev:null,items:map[s]}));
+  }
+  groups.forEach(g=>{
+    const wrap=document.createElement("div");wrap.className="db-group";const barCls=g.sev?g.sev.toLowerCase():"";
+    wrap.innerHTML='<div class="db-gh">'+(g.sev?'<span class="bar-k '+barCls+'"></span>':'')+'<h4>'+esc(g.label)+'</h4><span class="gc">'+g.items.length+'</span></div>';
+    g.items.forEach(f=>{
+      const it=document.createElement("div");it.className="db-item";
+      it.innerHTML='<div class="top"><span class="db-k '+f.sev.toLowerCase()+'">'+f.sev+'</span><span class="db-cat '+f.cat+'">'+esc(f.cat)+'</span><span class="db-loc">'+esc(locPath(f))+'</span></div><div class="db-note">'+esc(f.note)+'</div>';
+      wrap.appendChild(it);
+    });
+    body.appendChild(wrap);
+  });
+}
+$("debrief").addEventListener("click",openDebrief);
+$("dbDone").addEventListener("click",()=>$("dbView").classList.remove("open"));
+$("dbSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;dbGroup=b.dataset.g;[...$("dbSeg").children].forEach(c=>c.classList.toggle("on",c===b));renderDebrief();$("dbBody").scrollTop=0;});
+
+render();
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
