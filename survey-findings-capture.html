@@ -354,8 +354,7 @@ $("dbDone").addEventListener("click",()=>$("dbView").classList.remove("open"));
 $("dbSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;dbGroup=b.dataset.g;[...$("dbSeg").children].forEach(c=>c.classList.toggle("on",c===b));renderDebrief();$("dbBody").scrollTop=0;});
 
 render();
-<script>
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>

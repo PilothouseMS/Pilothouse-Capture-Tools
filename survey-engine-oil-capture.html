@@ -300,8 +300,7 @@ $("seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)r
 $("copy").addEventListener("click",async()=>{const btn=$("copy");try{await navigator.clipboard.writeText($("out").value);}catch(_){$("out").focus();$("out").select();document.execCommand("copy");}btn.textContent="Copied";btn.classList.add("done");setTimeout(()=>{btn.textContent="Copy";btn.classList.remove("done");},1600);});
 
 render();
-<script>
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-  </script>
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
 </body>
 </html>
