@@ -33,6 +33,9 @@
   .vessel-wrap input{width:100%;background:transparent;border:none;border-bottom:1.5px solid rgba(255,255,255,.25);color:#fff;font-size:19px;font-weight:600;font-family:var(--sans);padding:2px 2px 5px;}
   .vessel-wrap input::placeholder{color:rgba(255,255,255,.4);font-weight:500;}
   .vessel-wrap input:focus{outline:none;border-bottom-color:var(--teal-bright);}
+  .saved{font-family:var(--mono);font-size:9.5px;letter-spacing:1px;color:rgba(255,255,255,.55);margin-top:8px;display:flex;align-items:center;gap:6px;}
+  .saved .sd{width:6px;height:6px;border-radius:50%;background:var(--teal-bright);flex:none;}
+  .saved.warn{color:#ffb3b3;} .saved.warn .sd{background:#ff6b6b;}
 
   .wrap{max-width:640px;margin:0 auto;padding:16px 14px 0;}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 15px 18px;box-shadow:0 1px 3px rgba(10,22,40,.05);}
@@ -40,9 +43,9 @@
   .field + .field{margin-top:16px;}
 
   .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
-  .cchip{appearance:none;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-family:var(--sans);cursor:pointer;border-radius:10px;padding:10px 6px;text-align:center;transition:border-color .12s,background .12s,box-shadow .12s;}
+  .cchip{appearance:none;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-family:var(--sans);cursor:pointer;border-radius:10px;padding:10px 5px;text-align:center;transition:border-color .12s,background .12s,box-shadow .12s;}
   .cchip .lg{font-size:20px;font-weight:800;line-height:1.1;display:block;}
-  .cchip .sm{font-size:10.5px;color:var(--muted);display:block;margin-top:2px;line-height:1.2;}
+  .cchip .sm{font-size:10px;color:var(--muted);display:block;margin-top:2px;line-height:1.15;}
   .cchip[data-k="A"] .lg{color:var(--a);} .cchip[data-k="B"] .lg{color:var(--b);} .cchip[data-k="C"] .lg{color:var(--c);}
   .cchip[aria-pressed="true"][data-k="A"]{border-color:var(--a);background:#fdecec;box-shadow:inset 0 0 0 1.5px var(--a);}
   .cchip[aria-pressed="true"][data-k="B"]{border-color:var(--b);background:#fdf1e6;box-shadow:inset 0 0 0 1.5px var(--b);}
@@ -106,6 +109,7 @@
   .sheet-actions button{flex:1;border-radius:10px;font-family:var(--sans);font-size:15px;font-weight:700;padding:14px;cursor:pointer;}
   .btn-copy{border:none;background:var(--navy);color:#fff;}
   .btn-copy.done{background:var(--teal);}
+  .btn-share{border:none;background:var(--teal);color:#fff;}
   .btn-close{border:1.5px solid var(--line);background:#fff;color:var(--muted);}
 
   .debrief{position:fixed;inset:0;z-index:110;background:var(--paper);display:none;flex-direction:column;}
@@ -137,6 +141,10 @@
   .db-done{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);background:rgba(238,242,249,.92);backdrop-filter:blur(8px);border-top:1px solid var(--line);}
   .db-done button{width:100%;max-width:610px;margin:0 auto;display:block;border:none;background:var(--navy);color:#fff;font-family:var(--sans);font-size:16px;font-weight:700;padding:15px;border-radius:11px;cursor:pointer;}
 
+  .restored{background:#e8f5ef;border:1px solid #b7ded0;color:#1d6b4f;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:13.5px;display:flex;align-items:center;gap:9px;}
+  .restored button{margin-left:auto;border:none;background:none;color:#1d6b4f;font-weight:700;font-size:13px;cursor:pointer;text-decoration:underline;}
+  .nostore{background:#fdecec;border:1px solid #f0c2c2;color:#9d2b2b;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:13px;}
+
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -147,12 +155,14 @@
     <div class="vessel-wrap"><label for="vessel">Vessel</label><input id="vessel" type="text" placeholder="Vessel name" autocomplete="off" spellcheck="false"></div>
     <div class="gauge"><span class="dot"></span><span class="num" id="count">0</span><span class="lbl">Observations</span></div>
   </div>
+  <div class="saved" id="savedNote"><span class="sd"></span><span id="savedTxt">Saved to this device</span></div>
 </header>
 
 <div class="wrap">
+  <div id="banner"></div>
   <div class="card">
     <div class="field">
-      <span class="flabel">Severity</span>
+      <span class="flabel">Priority</span>
       <div class="three" id="sevChips">
         <button class="cchip" data-k="A" aria-pressed="false"><span class="lg">A</span><span class="sm" id="lblA"></span></button>
         <button class="cchip" data-k="B" aria-pressed="false"><span class="lg">B</span><span class="sm" id="lblB"></span></button>
@@ -181,8 +191,7 @@
 
     <div class="field">
       <label class="flabel" for="component">Component <span style="text-transform:none;letter-spacing:0;">(optional)</span></label>
-      <input class="txt" id="component" list="compList" placeholder="Specific item, e.g. House bank battery #2" autocomplete="off">
-      <datalist id="compList"></datalist>
+      <input class="txt" id="component" placeholder="Specific item, e.g. House bank battery #2" autocomplete="off">
     </div>
 
     <div class="field">
@@ -209,10 +218,14 @@
   <div class="sheet">
     <div class="grab"></div>
     <h3>Export observations</h3>
-    <p class="sub">CSV for InspectX re-entry, or the AI prompt to draft the formal findings.</p>
+    <p class="sub">CSV for the findings workflow, or the AI prompt to draft formal findings.</p>
     <div class="seg" id="seg"><button data-f="csv" class="on">CSV</button><button data-f="md">AI prompt</button></div>
     <textarea class="out" id="out" readonly></textarea>
-    <div class="sheet-actions"><button class="btn-close" id="close">Close</button><button class="btn-copy" id="copy">Copy</button></div>
+    <div class="sheet-actions">
+      <button class="btn-close" id="close">Close</button>
+      <button class="btn-share" id="share">Share</button>
+      <button class="btn-copy" id="copy">Copy</button>
+    </div>
   </div>
 </div>
 
@@ -220,56 +233,99 @@
   <div class="db-head">
     <div class="v" id="dbVessel">Vessel</div>
     <div class="db-tally" id="dbTally"></div>
-    <div class="db-seg" id="dbSeg"><button data-g="sev" class="on">By severity</button><button data-g="system">By system</button></div>
+    <div class="db-seg" id="dbSeg"><button data-g="sev" class="on">By priority</button><button data-g="system">By system</button></div>
   </div>
   <div class="db-body" id="dbBody"></div>
   <div class="db-done"><button id="dbDone">Back to capture</button></div>
 </div>
 
 <script>
-// ---- Editable config ----
-const SEVERITY_LABELS = { A:"Address now", B:"Near-term", C:"Monitor / minor" }; // placeholder — set to your A/B/C definitions
+/* =====================================================================
+   Pilothouse observation capture
+   Taxonomy is GENERATED from ClaudeVault/00-System/survey-taxonomy.md —
+   do not hand-edit the TAX block below. Change the vault file and
+   regenerate, or the app and the findings library drift apart again.
+   ===================================================================== */
+const TAX = {"version": "1.0","updated": "2026-07-26","priority": {"A": "First priority / safety and compliance findings","B": "Second priority / findings requiring timely attention","C": "Surveyor's general findings and observations"},"category": {"Safety": "safety","Defect": "deficiency","Maintenance": "recommendation"},"systems": [{"n": "Exterior Hull","subs": ["Topsides & Gelcoat","Bottom & Antifouling","Blistering & Laminate Condition","Keel, Skeg & Attachment","Hull-Deck Joint & Rubrail","Transom & Boarding Platform","Thru-Hulls & Seacocks","Running Gear — Shafts, Struts, Propellers","Anodes & Cathodic Protection"]},{"n": "Interior Hull","subs": ["Bulkheads & Attachment","Stringers, Floors & Framing","Hull Liner & Pan","Tankage Supports & Chocking","Limber Holes & Drainage","Access & Inspection Openings","Moisture, Staining & Corrosion"]},{"n": "Top Deck","subs": ["Deck Laminate, Coring & Non-Skid","Deck Hardware, Fastening & Sealing","Hatches, Portlights & Windows","Companionway & Doors","Rails, Stanchions & Lifelines","Cockpit & Drainage","Superstructure & Flybridge","Hardtop, Arch & Canvas","Ground Tackle, Windlass & Mooring","Boarding & Reboarding Means"]},{"n": "Rigging","subs": ["Mast, Boom & Spars","Mast Step, Partners & Collar","Chainplates & Attachment","Standing Rigging & Terminals","Turnbuckles & Toggles","Furling Systems","Running Rigging & Reefing","Winches, Blocks & Hardware","Sails & Covers"]},{"n": "Propulsion","subs": ["Engine — General Condition","Mounts & Alignment","Cooling — Raw Water","Cooling — Fresh Water & Heat Exchange","Exhaust System","Transmission & Drive","Shaft Log, Stuffing Box & Coupling","Controls, Instrumentation & Alarms","Machinery Space — Access, Ventilation & Insulation","Stabilizers & Thrusters"]},{"n": "Outboard","subs": ["Powerhead & General Condition","Mounting, Bracket & Transom","Lower Unit & Gearcase","Propellers","Tilt & Trim","Controls, Cables & Harness","Instrumentation & Alarms","Fuel Connection & Primer"]},{"n": "Steering","subs": ["Helm Station(s)","Cable & Mechanical Linkage","Hydraulic System","Rudder, Stock & Bearing","Emergency Steering","Autopilot Drive","Alignment, Stops & Travel"]},{"n": "Fuel","subs": ["Tanks & Supports","Fill, Vent & Deck Fittings","Supply & Return Lines","Filtration & Water Separation","Shutoffs & Valves","Gauging & Senders","Bonding & Grounding","Labeling & Placarding"]},{"n": "Water","subs": ["Fresh Water — Tanks & Supply","Fresh Water — Pumps & Distribution","Water Heater & Relief Valve","Fixtures, Sinks & Outlets","Black Water — Holding Tank & MSD","Black Water — Discharge & Pumpout","Grey Water & Shower Sumps","Bilge Pumps, Switches & Alarms","Bilge Discharge, Hoses & Loops","Hoses, Clamps & Permeation","Watermaker & Treatment"]},{"n": "Electric","subs": ["DC — Batteries & Installation","DC — Charging & Switching","DC — Distribution, Panels & Protection","AC — Shore Power & Isolation","AC — Distribution, Panels & Protection","AC — Receptacles & GFCI","Inverter / Charger","Conductors, Routing & Connections","Bonding, Grounding & Cathodic","Lightning Protection","Lighting"]},{"n": "Generator","subs": ["Generator Set — General Condition","Mounting & Vibration Isolation","Fuel Supply","Cooling System","Exhaust System","Electrical Output & Protection","Controls, Instrumentation & Alarms","Sound Enclosure & Ventilation"]},{"n": "Navigation","subs": ["Magnetic Compass","GPS / Chartplotter","Radar","VHF & DSC","AIS","Depth, Speed & Wind Instruments","Autopilot Control Head","Antennas, Cabling & Mounts","Charts, Publications & Software"]},{"n": "Safety","subs": ["PFDs, Throwable & MOB Equipment","Visual Distress Signals & Sound Device","Portable Fire Extinguishers","Fixed Fire Suppression","Navigation Lights","Ventilation & Backfire Flame Arrestor","CO, Smoke & Fire Detection","Gas / Vapor Detection","Bilge & High Water Alarms","Emergency Shutoffs & Egress","Liferaft, EPIRB & Abandon Ship","Placards, Labels & Safety Documentation"]},{"n": "Interior","subs": ["Salon & Seating","Joinery, Cabinetry & Storage","Sole & Flooring","Headliner & Overhead","Berths & Cushions","Head Compartments & Fixtures","Interior Lighting & Outlets","Ventilation & Ports","Moisture, Odor & Mildew"]},{"n": "Interior Systems","subs": ["Cooking Appliance & Ventilation","Refrigeration & Icemaker","Galley Sinks & Surfaces","Air Conditioning","Heating","HVAC Raw Water & Condensate","Laundry & Major Appliances","Entertainment & AV","Networking, Satellite & Antennas"]},{"n": "Exterior Equipment","subs": ["Davits, Cranes & Lifting Gear","Swim Platform & Ladder","Deck Shower & Wash-Down","Grill, Wet Bar & Refrigeration","Exterior Seating & Tables","Covers, Canvas & Enclosure","Exterior Lighting","Boarding Steps & Gates"]},{"n": "LPG","subs": ["Cylinders & Storage Locker","Locker Ventilation & Overboard Drain","Regulator & Pressure Gauge","Solenoid & Remote Shutoff","Piping, Hose & Fittings","Appliance Connections","Leak Detection & Alarm","Labeling, Placarding & Test"]},{"n": "Fishing","subs": ["Outriggers & Poles","Rod Holders & Racks","Fighting Chair & Mounts","Livewell & Circulation","Fish Boxes & Drainage","Downriggers & Electric Reels","Tower & Casting Platform"]},{"n": "Tender","subs": ["Hull, Tubes & Inflation","Tender Outboard","Stowage, Chocks & Securing","Davits & Lifting Gear","Fuel & Storage","Safety Equipment Aboard","Registration & Numbering"]},{"n": "Sea Trials","subs": ["Starting & Cold Start","Engine Performance & RPM","Vibration & Noise","Shifting & Throttle Response","Steering & Handling","Instrumentation Under Way","Sailing Performance","Systems Under Way","Post-Trial Inspection"]},{"n": "Admin / Documentation","subs": ["HIN & Hull Identification","Capacity & Manufacturer Plates","Registration & Documentation","Title & Ownership Papers","Insurance & Prior Surveys","Owner's Manuals & Records","Placards & Required Labels","Maintenance & Service Records"]}]};
+
+const PRIORITY = TAX.priority;               // A/B/C  — report section / urgency
 const SEV_ORDER = ["A","B","C"];
-const SYSTEMS = {
-  "Hull & Structure":["Hull below waterline","Topsides","Keel / Ballast","Deck / Coring","Bulkheads / Stringers","Blisters / Osmosis","Through-hulls"],
-  "Deck & Superstructure":["Deck hardware","Hatches / Ports","Rails / Stanchions","Windows / Glazing","Non-skid","Anchor locker"],
-  "Propulsion":["Engine","Transmission","Shaft / Coupling","Propeller","Engine mounts","Exhaust system","Engine controls"],
-  "Fuel System":["Tanks","Lines / Hoses","Filters / Separators","Fill / Vent","Shutoffs","Labeling"],
-  "Electrical – DC":["Batteries","Wiring / Connections","DC panel","Charging system","Bonding","Overcurrent protection"],
-  "Electrical – AC":["Shore power inlet","Inverter / Charger","AC panel","GFCI","Galvanic isolator","Wiring"],
-  "Steering":["Helm","Cables / Hydraulics","Rudder / Bearing","Autopilot","Emergency tiller"],
-  "Plumbing & Bilge":["Bilge pumps","Seacocks","Hoses / Clamps","Fresh water","Holding tank","Sanitation"],
-  "Ground Tackle":["Windlass","Anchor","Rode","Cleats / Chocks"],
-  "Safety Equipment":["PFDs","Fire extinguishers","Flares / Visual","Horn","Navigation lights","EPIRB"],
-  "Navigation":["Electronics","Compass","VHF","Radar / GPS","Charts"],
-  "Rigging (Sail)":["Standing rigging","Running rigging","Mast / Boom","Furling","Winches","Chainplates"],
-  "Accommodations":["HVAC","Refrigeration","Galley / Propane","Interior structure","Ventilation"]
-};
+const CATEGORY = TAX.category;               // Safety|Defect|Maintenance -> vault severity
+const SHORT = { A:"Safety &<br>compliance", B:"Timely<br>attention", C:"General<br>observation" };
 
-const state={ sev:"", cat:"", findings:[] };
-const $=id=>document.getElementById(id);
+const STORE = "pms.capture.v2";
+const state = { sev:"", cat:"", vessel:"", findings:[] };
+const $ = id => document.getElementById(id);
 
-$("lblA").textContent=SEVERITY_LABELS.A; $("lblB").textContent=SEVERITY_LABELS.B; $("lblC").textContent=SEVERITY_LABELS.C;
+/* ---------- persistence ----------
+   Without this a backgrounded Safari tab silently discards a day of work. */
+let storeOK = true;
+function save(){
+  if(!storeOK) return;
+  try{
+    localStorage.setItem(STORE, JSON.stringify({
+      vessel: $("vessel").value, findings: state.findings, ts: Date.now()
+    }));
+    stamp();
+  }catch(e){ storeOK = false; flagNoStore(); }
+}
+function stamp(){
+  const t = new Date();
+  $("savedTxt").textContent = "Saved " + t.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+}
+function flagNoStore(){
+  $("savedNote").classList.add("warn");
+  $("savedTxt").textContent = "NOT SAVING — export often";
+  $("banner").innerHTML = '<div class="nostore"><b>This browser is not saving your work.</b> '+
+    'Private browsing blocks storage. Switch to a normal tab, or export after every few observations.</div>';
+}
+function load(){
+  let raw=null;
+  try{ raw = localStorage.getItem(STORE); }catch(e){ storeOK=false; flagNoStore(); return; }
+  if(!raw) { $("savedTxt").textContent = "Saved to this device"; return; }
+  try{
+    const d = JSON.parse(raw);
+    if(!d || !Array.isArray(d.findings)) return;
+    state.findings = d.findings;
+    $("vessel").value = d.vessel || "";
+    if(d.findings.length){
+      const when = d.ts ? new Date(d.ts).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) : "earlier";
+      $("banner").innerHTML = '<div class="restored"><span>Restored '+d.findings.length+
+        ' observation'+(d.findings.length===1?"":"s")+' from '+when+'.</span>'+
+        '<button id="dismiss">Dismiss</button></div>';
+      setTimeout(()=>{ const b=$("dismiss"); if(b) b.onclick=()=>$("banner").innerHTML=""; },0);
+    }
+    if(d.ts) $("savedTxt").textContent = "Saved " + new Date(d.ts).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+  }catch(e){}
+}
 
+$("lblA").innerHTML=SHORT.A; $("lblB").innerHTML=SHORT.B; $("lblC").innerHTML=SHORT.C;
+
+/* ---------- taxonomy dropdowns ---------- */
 const sysSel=$("system"), subSel=$("subsystem");
-Object.keys(SYSTEMS).forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;sysSel.appendChild(o);});
-sysSel.addEventListener("change",()=>{
-  const s=sysSel.value; subSel.innerHTML="";
-  if(!s){subSel.disabled=true;subSel.innerHTML='<option value="">Select system first</option>';return;}
+TAX.systems.forEach(s=>{const o=document.createElement("option");o.value=s.n;o.textContent=s.n;sysSel.appendChild(o);});
+function fillSubs(sysName, keep){
+  subSel.innerHTML="";
+  const sys = TAX.systems.find(s=>s.n===sysName);
+  if(!sys){subSel.disabled=true;subSel.innerHTML='<option value="">Select system first</option>';return;}
   subSel.disabled=false;
   const blank=document.createElement("option");blank.value="";blank.textContent="— (system-level) —";subSel.appendChild(blank);
-  SYSTEMS[s].forEach(sub=>{const o=document.createElement("option");o.value=sub;o.textContent=sub;subSel.appendChild(o);});
-});
+  sys.subs.forEach(sub=>{const o=document.createElement("option");o.value=sub;o.textContent=sub;subSel.appendChild(o);});
+  if(keep) subSel.value=keep;
+}
+sysSel.addEventListener("change",()=>fillSubs(sysSel.value));
 
 $("sevChips").addEventListener("click",e=>{const b=e.target.closest(".cchip");if(!b)return;state.sev=b.dataset.k;[...document.querySelectorAll(".cchip")].forEach(c=>c.setAttribute("aria-pressed",c===b?"true":"false"));$("warn").textContent="";});
 $("catChips").addEventListener("click",e=>{const b=e.target.closest(".catchip");if(!b)return;state.cat=b.dataset.n;[...document.querySelectorAll(".catchip")].forEach(c=>c.setAttribute("aria-pressed",c===b?"true":"false"));$("warn").textContent="";});
+$("vessel").addEventListener("input",save);
 
 $("add").addEventListener("click",()=>{
   const note=$("note").value.trim();const comp=$("component").value.trim();const miss=[];
-  if(!state.sev)miss.push("a severity");if(!state.cat)miss.push("a category");if(!sysSel.value)miss.push("a system");if(!note)miss.push("the observation");
+  if(!state.sev)miss.push("a priority");if(!state.cat)miss.push("a category");if(!sysSel.value)miss.push("a system");if(!note)miss.push("the observation");
   if(miss.length){$("warn").textContent="Add "+miss.join(", ")+".";return;}
-  state.findings.push({sev:state.sev,cat:state.cat,system:sysSel.value,subsystem:subSel.value||"",component:comp,note});
-  $("note").value="";$("component").value="";$("warn").textContent="";render();$("note").focus();
+  state.findings.push({sev:state.sev,cat:state.cat,system:sysSel.value,subsystem:subSel.value||"",component:comp,note,ts:Date.now()});
+  $("note").value="";$("component").value="";$("warn").textContent="";
+  save();render();$("note").focus();
 });
 
 function locPath(f){return [f.system,f.subsystem,f.component].filter(Boolean).join(" › ");}
@@ -278,7 +334,7 @@ function render(){
   $("count").textContent=state.findings.length;
   const has=state.findings.length>0;$("export").disabled=!has;$("debrief").disabled=!has;
   const list=$("list");
-  if(!has){list.innerHTML='<div class="empty"><strong>No observations yet</strong>Set severity and category, choose the system, and dictate what you see.</div>';return;}
+  if(!has){list.innerHTML='<div class="empty"><strong>No observations yet</strong>Set priority and category, choose the system, and dictate what you see.</div>';return;}
   list.innerHTML="";
   state.findings.forEach((f,i)=>{
     const el=document.createElement("div");el.className="obs";el.dataset.k=f.sev;
@@ -288,29 +344,40 @@ function render(){
 }
 function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 
-$("list").addEventListener("click",e=>{const d=e.target.closest(".del");if(!d)return;state.findings.splice(+d.dataset.i,1);render();});
+$("list").addEventListener("click",e=>{
+  const d=e.target.closest(".del");if(!d)return;
+  const f=state.findings[+d.dataset.i];
+  if(!confirm("Delete this observation?\n\n"+f.note.slice(0,120)))return;
+  state.findings.splice(+d.dataset.i,1);save();render();
+});
 
 let armed=false,armTimer=null;
 $("new").addEventListener("click",()=>{
   const btn=$("new");
   if(!armed){armed=true;btn.classList.add("armed");btn.textContent=state.findings.length?"Discard "+state.findings.length+"? Tap again":"Clear? Tap again";armTimer=setTimeout(disarm,3000);return;}
   clearTimeout(armTimer);disarm();
-  state.findings=[];state.sev="";state.cat="";$("vessel").value="";$("note").value="";$("component").value="";sysSel.value="";sysSel.dispatchEvent(new Event("change"));
-  [...document.querySelectorAll(".cchip,.catchip")].forEach(c=>c.setAttribute("aria-pressed","false"));render();
+  state.findings=[];state.sev="";state.cat="";$("vessel").value="";$("note").value="";$("component").value="";sysSel.value="";fillSubs("");
+  [...document.querySelectorAll(".cchip,.catchip")].forEach(c=>c.setAttribute("aria-pressed","false"));
+  $("banner").innerHTML="";save();render();
 });
 function disarm(){armed=false;$("new").classList.remove("armed");$("new").textContent="New vessel";}
 
-// ---- Export ----
+/* ---------- export ---------- */
 let fmt="csv";
 function buildCSV(){
-  const v=$("vessel").value.trim();const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
-  let rows=["Vessel,Severity,Category,System,Subsystem,Component,Observation"];
-  state.findings.forEach(f=>rows.push([v,f.sev,f.cat,f.system,f.subsystem,f.component,f.note].map(q).join(",")));
+  const v=$("vessel").value.trim();const date=new Date().toISOString().slice(0,10);
+  const q=s=>'"'+String(s==null?"":s).replace(/"/g,'""')+'"';
+  let rows=["Vessel,Date,Priority,Category,Severity,System,Subsystem,Component,Observation"];
+  state.findings.forEach(f=>rows.push(
+    [v,date,f.sev,f.cat,CATEGORY[f.cat]||"",f.system,f.subsystem,f.component,f.note].map(q).join(",")));
   return rows.join("\n");
 }
 function buildMD(){
   const v=$("vessel").value.trim()||"(unnamed vessel)";const date=new Date().toISOString().slice(0,10);
-  let out="VESSEL: "+v+"\nDATE: "+date+"\nOBSERVATIONS: "+state.findings.length+"\n\nWrite formal survey findings from the observations below. Each is tagged by severity (A/B/C) and category (Safety / Defect / Maintenance).\n";
+  let out="VESSEL: "+v+"\nDATE: "+date+"\nOBSERVATIONS: "+state.findings.length+"\n\n"+
+    "Draft formal survey findings from the observations below using the marine-survey-findings skill.\n\n"+
+    "Priority: A = "+PRIORITY.A+"; B = "+PRIORITY.B+"; C = "+PRIORITY.C+"\n"+
+    "Category maps to vault severity: Safety→safety, Defect→deficiency, Maintenance→recommendation.\n";
   const g={};state.findings.forEach(f=>{(g[f.system]=g[f.system]||[]).push(f);});
   Object.keys(g).forEach(sys=>{out+="\n## "+sys.toUpperCase()+"\n";g[sys].forEach(f=>{const tail=[f.subsystem,f.component].filter(Boolean).join(" — ");out+="- ["+f.sev+" · "+f.cat+"] "+(tail?tail+": ":"")+f.note+"\n";});});
   return out;
@@ -321,8 +388,14 @@ $("close").addEventListener("click",()=>$("sheetBg").classList.remove("open"));
 $("sheetBg").addEventListener("click",e=>{if(e.target===$("sheetBg"))$("sheetBg").classList.remove("open");});
 $("seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;fmt=b.dataset.f;[...$("seg").children].forEach(c=>c.classList.toggle("on",c===b));refreshOut();});
 $("copy").addEventListener("click",async()=>{const btn=$("copy");try{await navigator.clipboard.writeText($("out").value);}catch(_){$("out").focus();$("out").select();document.execCommand("copy");}btn.textContent="Copied";btn.classList.add("done");setTimeout(()=>{btn.textContent="Copy";btn.classList.remove("done");},1600);});
+if(navigator.share){
+  $("share").addEventListener("click",async()=>{
+    const v=$("vessel").value.trim()||"observations";
+    try{ await navigator.share({title:v, text:$("out").value}); }catch(_){}
+  });
+} else { $("share").style.display="none"; }
 
-// ---- Debrief ----
+/* ---------- debrief ---------- */
 let dbGroup="sev";
 function openDebrief(){
   $("dbVessel").textContent=$("vessel").value.trim()||"Observation debrief";
@@ -333,10 +406,11 @@ function openDebrief(){
 function renderDebrief(){
   const body=$("dbBody");body.innerHTML="";let groups;
   if(dbGroup==="sev"){
-    groups=SEV_ORDER.map(k=>({key:k,label:"Severity "+k+" — "+SEVERITY_LABELS[k],sev:k,items:state.findings.filter(f=>f.sev===k)})).filter(g=>g.items.length);
+    groups=SEV_ORDER.map(k=>({key:k,label:k+" — "+PRIORITY[k],sev:k,items:state.findings.filter(f=>f.sev===k)})).filter(g=>g.items.length);
   } else {
+    const order=TAX.systems.map(s=>s.n);
     const map={};state.findings.forEach(f=>{(map[f.system]=map[f.system]||[]).push(f);});
-    groups=Object.keys(map).map(s=>({key:s,label:s,sev:null,items:map[s]}));
+    groups=Object.keys(map).sort((a,b)=>order.indexOf(a)-order.indexOf(b)).map(s=>({key:s,label:s,sev:null,items:map[s]}));
   }
   groups.forEach(g=>{
     const wrap=document.createElement("div");wrap.className="db-group";const barCls=g.sev?g.sev.toLowerCase():"";
@@ -353,8 +427,11 @@ $("debrief").addEventListener("click",openDebrief);
 $("dbDone").addEventListener("click",()=>$("dbView").classList.remove("open"));
 $("dbSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;dbGroup=b.dataset.g;[...$("dbSeg").children].forEach(c=>c.classList.toggle("on",c===b));renderDebrief();$("dbBody").scrollTop=0;});
 
-render();
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+/* save whenever the app is backgrounded — the exact moment iOS may evict it */
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) save(); });
+window.addEventListener("pagehide",save);
+
+load();render();
 </script>
 </body>
 </html>
