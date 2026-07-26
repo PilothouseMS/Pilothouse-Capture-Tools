@@ -150,11 +150,23 @@
   .nostore{background:#fdecec;border:1px solid #f0c2c2;color:#9d2b2b;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:13px;}
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+
+  /* Home Screen web apps have no browser chrome and no back button.
+     This link is the only way back to the hub. */
+  .backbar{display:flex;align-items:center;margin:0 0 12px;}
+  .backbar a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;
+    font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--teal-bright);background:rgba(0,160,160,.12);
+    border:1px solid rgba(18,194,194,.45);border-radius:7px;padding:6px 11px 6px 9px;
+    -webkit-tap-highlight-color:transparent;}
+  .backbar a:active{background:rgba(0,160,160,.26);}
+  .backbar .chev{font-size:15px;line-height:1;margin-top:-1px;}
 </style>
 </head>
 <body>
 
 <header class="panel">
+  <div class="backbar"><a href="./index.html" aria-label="Back to Pilothouse Capture Tools"><span class="chev">&lsaquo;</span>Tools</a></div>
   <div class="panel-top">
     <div class="vessel-wrap"><label for="vessel">Vessel</label><input id="vessel" type="text" placeholder="Vessel name" autocomplete="off" spellcheck="false"></div>
     <div class="gauge"><span class="dot"></span><span class="num" id="count">0</span><span class="lbl">Observations</span></div>
