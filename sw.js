@@ -1,6 +1,6 @@
 // Pilothouse Capture Tools — offline cache
 // When you change a tool, bump v1 -> v2 (etc.) so phones pull the new version.
-const CACHE = 'pilothouse-v9';
+const CACHE = 'pilothouse-v10';
 const FILES = [
   './',
   './index.html',
