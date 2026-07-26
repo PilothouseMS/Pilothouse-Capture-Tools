@@ -140,8 +140,9 @@
 
     <div class="field">
       <label class="flabel" for="make">Make</label>
-      <input class="txt" id="make" list="makeList" placeholder="Manufacturer" autocomplete="off">
-      <datalist id="makeList"></datalist>
+      <select id="make"><option value="">Select manufacturer…</option></select>
+      <input class="txt" id="makeOther" placeholder="Type the manufacturer" autocomplete="off"
+             style="display:none;margin-top:8px">
     </div>
 
     <div class="field row2">
@@ -196,9 +197,16 @@
    backgrounding, because iOS discards a backgrounded tab's memory without
    warning and a lost sample record means a second trip to the boat.
    ===================================================================== */
-const MAKES=["Yanmar","Volvo Penta","Cummins","Caterpillar","MAN","John Deere","Perkins",
-  "Westerbeke","Beta Marine","Nanni","Mercury","MerCruiser","Yamaha","Honda","Suzuki",
-  "Tohatsu","Onan","Kohler","Northern Lights","Fischer Panda","ZF","Twin Disc","Velvet Drive"];
+/* A native <select>, not a <datalist> — iOS Safari's datalist support is
+   unreliable and the field silently does nothing on a phone. Grouped so the
+   wheel picker is scannable. "Other" reveals a free-text box. */
+const MAKE_GROUPS=[
+  ["Diesel / inboard",["Yanmar","Volvo Penta","Cummins","Caterpillar","MAN","John Deere",
+                       "Perkins","Westerbeke","Beta Marine","Nanni"]],
+  ["Gas / outboard & sterndrive",["Mercury","MerCruiser","Yamaha","Honda","Suzuki","Tohatsu"]],
+  ["Generator",["Onan","Kohler","Northern Lights","Fischer Panda"]],
+  ["Transmission / drive",["ZF","Twin Disc","Velvet Drive"]]
+];
 
 /* Printed verbatim on every oil sample label — this is what the lab reads. */
 const SURVEYOR = {
@@ -211,7 +219,22 @@ const STORE="pms.engineoil.v2";
 const state={ pos:"", units:[] };
 const $=id=>document.getElementById(id);
 
-MAKES.forEach(m=>{const o=document.createElement("option");o.value=m;$("makeList").appendChild(o);});
+MAKE_GROUPS.forEach(([label,items])=>{
+  const g=document.createElement("optgroup"); g.label=label;
+  items.forEach(m=>{const o=document.createElement("option");o.value=m;o.textContent=m;g.appendChild(o);});
+  $("make").appendChild(g);
+});
+{ const o=document.createElement("option"); o.value="__other"; o.textContent="Other…"; $("make").appendChild(o); }
+$("make").addEventListener("change",()=>{
+  const other=$("make").value==="__other";
+  $("makeOther").style.display=other?"":"none";
+  if(other)$("makeOther").focus();
+  $("warn").textContent="";
+});
+function makeValue(){
+  return $("make").value==="__other" ? $("makeOther").value.trim() : $("make").value;
+}
+function resetMake(){ $("make").value=""; $("makeOther").value=""; $("makeOther").style.display="none"; }
 $("sampled").value=new Date().toISOString().slice(0,10);
 
 /* ---------- persistence ---------- */
@@ -267,7 +290,7 @@ $("vessel").addEventListener("input",save);
 $("jobno").addEventListener("input",save);
 
 $("add").addEventListener("click",()=>{
-  const u={unit:$("unit").value,pos:state.pos,make:$("make").value.trim(),
+  const u={unit:$("unit").value,pos:state.pos,make:makeValue(),
     model:$("model").value.trim(),serial:$("serial").value.trim(),
     hours:$("hours").value.trim(),sinceoil:$("sinceoil").value.trim(),
     sampled:$("sampled").value,oiltype:$("oiltype").value.trim()};
@@ -276,7 +299,7 @@ $("add").addEventListener("click",()=>{
   if(!u.pos)miss.push("a position");
   if(miss.length){$("warn").textContent="Add "+miss.join(" and ")+".";return;}
   state.units.push(u);
-  ["make","model","serial","hours","sinceoil","oiltype"].forEach(k=>$(k).value="");
+  ["model","serial","hours","sinceoil","oiltype"].forEach(k=>$(k).value=""); resetMake();
   state.pos=""; [...document.querySelectorAll(".pchip")].forEach(c=>c.setAttribute("aria-pressed","false"));
   $("warn").textContent=""; save(); render(); $("make").focus();
 });
@@ -318,7 +341,7 @@ $("new").addEventListener("click",()=>{
     armTimer=setTimeout(disarm,3000);return;}
   clearTimeout(armTimer);disarm();
   state.units=[];state.pos="";
-  ["vessel","jobno","make","model","serial","hours","sinceoil","oiltype"].forEach(k=>$(k).value="");
+  ["vessel","jobno","model","serial","hours","sinceoil","oiltype"].forEach(k=>$(k).value=""); resetMake();
   $("sampled").value=new Date().toISOString().slice(0,10);
   [...document.querySelectorAll(".pchip")].forEach(c=>c.setAttribute("aria-pressed","false"));
   $("banner").innerHTML=""; save(); render();
