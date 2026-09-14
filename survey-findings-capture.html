@@ -38,6 +38,12 @@
   .saved .sd{width:6px;height:6px;border-radius:50%;background:var(--teal-bright);flex:none;}
   .saved.warn{color:#ffb3b3;} .saved.warn .sd{background:#ff6b6b;}
   #persistNote{margin-left:2px;}
+  /* 244: WHICH COPY IS THIS. Two home-screen icons pointing at two
+     builds look identical, and the only reason you spotted the August
+     one was that its class row had changed shape. A taxonomy update
+     changes no pixel of this screen, so it has to say so itself. */
+  #taxv{margin-left:auto;color:rgba(255,255,255,.38);letter-spacing:.6px;
+    white-space:nowrap;}   /* wraps to its own line whole, never mid-phrase */
   #persistNote.ok{color:var(--teal-bright);}
   #persistNote.risk{color:#ffcf8a;}
 
@@ -172,7 +178,7 @@
     <div class="vessel-wrap"><label for="vessel">Vessel</label><input id="vessel" type="text" placeholder="Vessel name" autocomplete="off" spellcheck="false"></div>
     <div class="gauge"><span class="dot"></span><span class="num" id="count">0</span><span class="lbl">Observations</span></div>
   </div>
-  <div class="saved" id="savedNote"><span class="sd"></span><span id="savedTxt">Saved to this device</span><span id="persistNote"></span></div>
+  <div class="saved" id="savedNote"><span class="sd"></span><span id="savedTxt">Saved to this device</span><span id="persistNote"></span><span id="taxv" title="Which taxonomy this copy carries"></span></div>
 </header>
 
 <div class="wrap">
@@ -475,6 +481,18 @@ async function requestPersistence(){
 /* save whenever the app is backgrounded — the exact moment iOS may evict it */
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) save(); });
 window.addEventListener("pagehide",save);
+
+// 244: read off TAX itself. A stamp typed by hand is a stamp that goes stale
+// the first time somebody regenerates and forgets it.
+(function stampTaxonomy(){
+  const el = document.getElementById("taxv"); if(!el) return;
+  const rows = TAX.systems.reduce((n,s)=>n+s.subs.length, 0);
+  let when = TAX.updated || "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(when);
+  if(m){ const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+         when = (+m[3]) + " " + M[+m[2]-1] + " " + m[1]; }
+  el.textContent = "tax v" + (TAX.version||"?") + (when?" \u00b7 "+when:"") + " \u00b7 " + rows + " rows";
+})();
 
 load();render();requestPersistence();
 </script>
