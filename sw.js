@@ -1,6 +1,6 @@
 // Pilothouse Capture Tools — offline cache
 // When you change a tool, bump v1 -> v2 (etc.) so phones pull the new version.
-const CACHE = 'pilothouse-v13';
+const CACHE = 'pilothouse-v22';
 const FILES = [
   './',
   './index.html',
@@ -8,13 +8,13 @@ const FILES = [
   './survey-equipment-capture.html',
   './survey-engine-oil-capture.html'
 ];
- 
+
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())
   );
 });
- 
+
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -22,7 +22,7 @@ self.addEventListener('activate', e => {
       .then(() => self.clients.claim())
   );
 });
- 
+
 self.addEventListener('fetch', e => {
   e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
 });
